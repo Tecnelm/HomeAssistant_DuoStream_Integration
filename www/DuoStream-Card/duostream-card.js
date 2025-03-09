@@ -2,7 +2,7 @@ class DuoStreamCard extends HTMLElement {
   // Set config when the element is created
   setConfig(config) {
     if (!config.device_name) {
-      throw new Error('You need to define the configuration name of the duostream device')
+      throw new Error('You need to define the configuration name of the duostream device : device_name')
     } else {
       this._config = Object.create(null);
       this._config.formated_configuration_name = String(config.device_name).toLowerCase().replaceAll(" ", "_").replaceAll("-", "_")
@@ -10,21 +10,46 @@ class DuoStreamCard extends HTMLElement {
       this._config.service_entity = `switch.duostream_${this._config.formated_configuration_name}_service_switch`
       this._config.sessions_sensor = `sensor.duostream_${this._config.formated_configuration_name}_available_sessions`
       this._config.pc_entity = `sensor.duostream_${this._config.formated_configuration_name}_computer_status`
-      if (config.wake_on_lan_entity)
-        this._config.wake_on_lan_entity = config.wake_on_lan_entity
-      Object.preventExtensions(this._config)
     }
+    if (!config.wake_on_lan_entity) {
+      throw new Error('You need to define a wake on lan switch : wake_on_lan_entity')
+    } else {
+      this._config.wake_on_lan_entity = config.wake_on_lan_entity
+    }
+    Object.preventExtensions(this._config)
     this._activeSessions = [];
   }
 
   // Set hass when Home Assistant connects
   set hass(hass) {
     this._hass = hass;
+
     if (!this._card) {
       this._createCard();
     }
 
     this._updateCard();
+  }
+   _checkDeviceExists(devices, argument) {
+    if (!devices || typeof devices !== 'object' || devices === null) {
+      return false;
+    }
+    
+    const searchName = `DuoStream ${argument}`;
+    
+    // Loop through the properties of the devices object
+    for (const key in devices) {
+      if (Object.hasOwnProperty.call(devices, key)) {
+        const device = devices[key];
+        
+        // Check if the current device has a name property matching our search
+        if (device && device.name === searchName) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   // Create the card DOM
@@ -44,8 +69,13 @@ class DuoStreamCard extends HTMLElement {
     this._theme = theme
 
     const card = document.createElement('ha-card');
-    card.header = `DuoStream Control ${this._config.device_name}`;
-        // Set card background if in dark mode
+    if (this._checkDeviceExists(this._hass.devices,this._config.device_name ) == false)
+    {
+      card.header = `Invalid Device Name`;
+    }else {
+      card.header = `DuoStream Control ${this._config.device_name}`;
+    }
+    // Set card background if in dark mode
     if (this._theme.cardBg) {
       card.style.backgroundColor = this._theme.cardBg;
       card.style.color = this._theme.textColor;
@@ -345,7 +375,7 @@ class DuoStreamCard extends HTMLElement {
   // Get service status
   _getServiceStatus() {
     const serviceEntity = this._config.service_entity;
-    return this._hass.states[serviceEntity] ? (this._hass.states[serviceEntity].state === "on" ? "running" : "stopped" ) : 'unknown';
+    return this._hass.states[serviceEntity] ? (this._hass.states[serviceEntity].state === "on" ? "running" : "stopped") : 'unknown';
   }
 
   // Get Wake on LAN status
@@ -436,7 +466,7 @@ class DuoStreamCard extends HTMLElement {
 
       const sessionName = document.createElement('span');
       sessionName.textContent = session;
-      sessionName.style.color = this._theme.textColor; 
+      sessionName.style.color = this._theme.textColor;
 
       const stopButton = document.createElement('button');
       stopButton.innerHTML = '&#10005;'; // × symbol
@@ -451,7 +481,7 @@ class DuoStreamCard extends HTMLElement {
       stopButton.style.justifyContent = 'center';
       stopButton.style.alignItems = 'center';
       stopButton.cleanup = this._addButtonClickEffect(stopButton, {
-        normalColor: '#f44336',  
+        normalColor: '#f44336',
         activeColor: '#d32f2f',
         disabledColor: '#cccccc'
       });
@@ -485,7 +515,7 @@ class DuoStreamCard extends HTMLElement {
       this._sessionSelect.removeChild(this._sessionSelect.firstChild);
     }
 
-    if (inactiveSessions.length === 0 ) {
+    if (inactiveSessions.length === 0) {
       const option = document.createElement('option');
       option.value = '';
       option.textContent = 'No available sessions';
@@ -576,27 +606,27 @@ class DuoStreamCard extends HTMLElement {
       scaleAmount: options.scaleAmount || 0.95,
       addShadow: options.addShadow !== undefined ? options.addShadow : true
     };
-  
+
     // Save original styles
     const originalTransform = button.style.transform || 'scale(1)';
     const originalTransition = button.style.transition || '';
     const originalBoxShadow = button.style.boxShadow || '';
-  
+
     // Add transition for smooth effect
     button.style.transition = 'transform 0.1s, background-color 0.1s, box-shadow 0.1s';
-  
+
     // Store event handler references
     const mousedownHandler = () => {
       if (!button.disabled) {
         button.style.transform = `scale(${settings.scaleAmount})`;
         button.style.backgroundColor = settings.activeColor;
-  
+
         if (settings.addShadow) {
           button.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
         }
       }
     };
-  
+
     const mouseupHandler = () => {
       if (!button.disabled) {
         button.style.transform = originalTransform;
@@ -604,7 +634,7 @@ class DuoStreamCard extends HTMLElement {
         button.style.boxShadow = originalBoxShadow;
       }
     };
-  
+
     const mouseleaveHandler = () => {
       if (!button.disabled) {
         button.style.transform = originalTransform;
@@ -612,12 +642,12 @@ class DuoStreamCard extends HTMLElement {
         button.style.boxShadow = originalBoxShadow;
       }
     };
-  
+
     // Add event listeners with named handlers
     button.addEventListener('mousedown', mousedownHandler);
     button.addEventListener('mouseup', mouseupHandler);
     button.addEventListener('mouseleave', mouseleaveHandler);
-  
+
     // Update button style when disabled state changes
     const updateDisabledState = () => {
       if (button.disabled) {
@@ -628,10 +658,10 @@ class DuoStreamCard extends HTMLElement {
         button.style.cursor = 'pointer';
       }
     };
-  
+
     // Run once to set initial state
     updateDisabledState();
-  
+
     // Create a mutation observer to watch for disabled attribute changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -640,10 +670,10 @@ class DuoStreamCard extends HTMLElement {
         }
       });
     });
-  
+
     // Start observing the button for disabled attribute changes
     observer.observe(button, { attributes: true });
-  
+
     // Return a function to remove all event listeners and observer
     return function cleanup() {
       button.removeEventListener('mousedown', mousedownHandler);
