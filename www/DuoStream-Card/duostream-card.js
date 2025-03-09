@@ -29,8 +29,27 @@ class DuoStreamCard extends HTMLElement {
 
   // Create the card DOM
   _createCard() {
+
+    const darkMode = this._hass.themes.darkMode;
+
+    const theme = {
+      cardBg: darkMode ? '#1c1c1c' : undefined,
+      textColor: darkMode ? '#e1e1e1' : '#333',
+      subtitleColor: darkMode ? '#a0a0a0' : '#666',
+      statusBoxBg: darkMode ? '#2d2d2d' : '#f5f5f5',
+      borderColor: darkMode ? '#555' : '#ccc',
+      disabledColor: darkMode ? '#555' : '#cccccc'
+    };
+
+    this._theme = theme
+
     const card = document.createElement('ha-card');
     card.header = `DuoStream Control ${this._config.device_name}`;
+        // Set card background if in dark mode
+    if (this._theme.cardBg) {
+      card.style.backgroundColor = this._theme.cardBg;
+      card.style.color = this._theme.textColor;
+    }
 
     this._card = card;
 
@@ -49,7 +68,8 @@ class DuoStreamCard extends HTMLElement {
     pcStatusBox.style.flex = '1';
     pcStatusBox.style.textAlign = 'center';
     pcStatusBox.style.padding = '8px';
-    pcStatusBox.style.backgroundColor = '#f5f5f5';
+    pcStatusBox.style.backgroundColor = this._theme.statusBoxBg;
+    pcStatusBox.style.color = this._theme.textColor;
     pcStatusBox.style.borderRadius = '8px';
     pcStatusBox.style.marginRight = '8px';
 
@@ -65,7 +85,8 @@ class DuoStreamCard extends HTMLElement {
     this._pcStatus = document.createElement('p');
     this._pcStatus.style.margin = '4px 0 0';
     this._pcStatus.style.fontSize = '14px';
-    this._pcStatus.style.color = '#666';
+    this._pcStatus.style.color = this._theme.subtitleColor;
+
 
     pcStatusBox.appendChild(pcIcon);
     pcStatusBox.appendChild(pcTitle);
@@ -76,7 +97,8 @@ class DuoStreamCard extends HTMLElement {
     serviceStatusBox.style.flex = '1';
     serviceStatusBox.style.textAlign = 'center';
     serviceStatusBox.style.padding = '8px';
-    serviceStatusBox.style.backgroundColor = '#f5f5f5';
+    serviceStatusBox.style.backgroundColor = this._theme.statusBoxBg;
+    serviceStatusBox.style.color = this._theme.textColor;
     serviceStatusBox.style.borderRadius = '8px';
 
     const serviceIcon = document.createElement('div');
@@ -91,7 +113,7 @@ class DuoStreamCard extends HTMLElement {
     this._serviceStatus = document.createElement('p');
     this._serviceStatus.style.margin = '4px 0 0';
     this._serviceStatus.style.fontSize = '14px';
-    this._serviceStatus.style.color = '#666';
+    this._serviceStatus.style.color = this._theme.subtitleColor;
 
     serviceStatusBox.appendChild(serviceIcon);
     serviceStatusBox.appendChild(serviceTitle);
@@ -161,9 +183,11 @@ class DuoStreamCard extends HTMLElement {
     this._activeSessionsContainer = document.createElement('div');
     this._activeSessionsContainer.style.maxHeight = '100px'; // Height for 2 items + scroll
     this._activeSessionsContainer.style.overflowY = 'auto';
-    this._activeSessionsContainer.style.border = '1px solid #ccc';
+    this._activeSessionsContainer.style.border = `1px solid ${this._theme.borderColor}`;
+    this._activeSessionsContainer.style.backgroundColor = this._theme.statusBoxBg;
     this._activeSessionsContainer.style.borderRadius = '8px';
     this._activeSessionsContainer.style.marginBottom = '12px';
+
 
     // Session selector
     const sessionSelector = document.createElement('div');
@@ -177,7 +201,10 @@ class DuoStreamCard extends HTMLElement {
     this._sessionSelect.style.width = '100%';
     this._sessionSelect.style.padding = '10px';
     this._sessionSelect.style.borderRadius = '8px';
-    this._sessionSelect.style.border = '1px solid #ccc';
+    this._sessionSelect.style.border = `1px solid ${this._theme.borderColor}`;
+    this._sessionSelect.style.backgroundColor = this._theme.statusBoxBg;
+    this._sessionSelect.style.color = this._theme.textColor;
+
 
     sessionSelector.appendChild(sessionLabel);
     sessionSelector.appendChild(this._sessionSelect);
@@ -394,7 +421,7 @@ class DuoStreamCard extends HTMLElement {
       noActiveSessions.textContent = 'No active sessions';
       noActiveSessions.style.padding = '10px';
       noActiveSessions.style.textAlign = 'center';
-      noActiveSessions.style.color = '#666';
+      noActiveSessions.style.color = this._theme.subtitleColor;
       this._activeSessionsContainer.appendChild(noActiveSessions);
       return;
     }
@@ -409,6 +436,7 @@ class DuoStreamCard extends HTMLElement {
 
       const sessionName = document.createElement('span');
       sessionName.textContent = session;
+      sessionName.style.color = this._theme.textColor; 
 
       const stopButton = document.createElement('button');
       stopButton.innerHTML = '&#10005;'; // × symbol
@@ -500,7 +528,7 @@ class DuoStreamCard extends HTMLElement {
     // If no session is selected or there are no options, disable the button
     if (!session || this._sessionSelect.childElementCount === 0 || serviceState === "stopped") {
       this._sessionButton.disabled = true;
-      this._sessionButton.style.backgroundColor = '#cccccc'; // Grey color for disabled state
+      this._sessionButton.style.backgroundColor = this._sessionButton.disabled ? this._theme.disabledColor : '#673ab7';
       this._sessionButton.style.cursor = 'not-allowed'; // Change cursor to indicate non-clickable
       this._sessionButtonText.textContent = `No Sessions Available`;
       return;
@@ -544,7 +572,7 @@ class DuoStreamCard extends HTMLElement {
     const settings = {
       activeColor: options.activeColor || '#5e34a0',
       normalColor: options.normalColor || '#673ab7',
-      disabledColor: options.disabledColor || '#cccccc',
+      disabledColor: options.disabledColor || (darkMode ? '#555' : '#cccccc'),
       scaleAmount: options.scaleAmount || 0.95,
       addShadow: options.addShadow !== undefined ? options.addShadow : true
     };
